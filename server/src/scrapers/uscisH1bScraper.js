@@ -3,17 +3,22 @@
  * Source: https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub
  * Data: FY2009–present, CSV format, annual
  *
- * The USCIS Hub provides per-employer approval/denial/RFE counts.
- * Files are named by fiscal year and available as direct CSV downloads.
+ * CSV columns: Fiscal Year, Employer, Initial Approval, Initial Denial,
+ *   Continuing Approval, Continuing Denial, NAICS, Tax ID, State, City, ZIP
+ *
+ * Each CSV row = one employer at one city/state location.
+ * This scraper aggregates all city/state rows per employer before upserting,
+ * so each record = true employer-wide totals across all US work locations.
+ *
+ * NOTE: USCIS bulk CSVs are available for FY2009–FY2023 only.
+ * FY2024+ data is available only via USCIS online query tool (not bulk download).
+ * For FY2024–FY2026, DOL LCA data is used as a proxy source.
  */
 const axios = require("axios");
 const H1bRecord = require("../models/H1bRecord");
 const DataSyncLog = require("../models/DataSyncLog");
 
-// USCIS publishes H-1B employer data as CSV downloads.
-// The base URL pattern and available years (update as new years are published).
 const USCIS_H1B_FILES = [
-  { year: 2024, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2024.csv" },
   { year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2023.csv" },
   { year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2022.csv" },
   { year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2021.csv" },
@@ -38,13 +43,80 @@ function parseNumber(val) {
 }
 
 function parseCsvRows(text) {
-  const lines = text.trim().split("\n");
+  // Strip BOM if present
+  const clean = text.replace(/^\uFEFF/, "").trim();
+  const lines = clean.split("\n");
   if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""));
-  return lines.slice(1).map((line) => {
-    const vals = line.split(",");
-    return headers.reduce((obj, h, i) => { obj[h] = (vals[i] || "").trim().replace(/^"|"$/g, ""); return obj; }, {});
-  });
+
+  // Parse header line — handles quoted headers
+  const headerLine = lines[0];
+  const headers = headerLine
+    .split(",")
+    .map((h) => h.replace(/^"|"$/g, "").trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""));
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV values — handle quoted fields containing commas
+    const vals = [];
+    let inQuote = false;
+    let cur = "";
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === "," && !inQuote) { vals.push(cur); cur = ""; }
+      else { cur += ch; }
+    }
+    vals.push(cur);
+
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || "").trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * Aggregate all per-location rows into one record per employer per year.
+ * This ensures the total counts match the USCIS published totals.
+ */
+function aggregateByEmployer(rows, year) {
+  const byEmployer = {};
+
+  for (const row of rows) {
+    const employer = row.employer || "";
+    if (!employer) continue;
+
+    if (!byEmployer[employer]) {
+      byEmployer[employer] = {
+        employer,
+        industry: row.naics || "",
+        // primary state = state of largest location (first occurrence keeps the state)
+        state: row.state || "",
+        initialApprovals: 0,
+        initialDenials: 0,
+        continuingApprovals: 0,
+        continuingDenials: 0,
+        locations: new Set(),
+      };
+    }
+
+    const e = byEmployer[employer];
+    // Handle both old (plural: "Initial Approvals") and new (singular: "Initial Approval") column names
+    e.initialApprovals += parseNumber(row.initial_approval || row.initial_approvals);
+    e.initialDenials += parseNumber(row.initial_denial || row.initial_denials);
+    e.continuingApprovals += parseNumber(row.continuing_approval || row.continuing_approvals);
+    e.continuingDenials += parseNumber(row.continuing_denial || row.continuing_denials);
+    if (row.state) e.locations.add(row.state);
+  }
+
+  return Object.values(byEmployer).map((e) => ({
+    ...e,
+    statesPresent: [...e.locations].join(","),
+    locations: undefined,
+  }));
 }
 
 async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
@@ -53,32 +125,32 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
 
   const filesToProcess = yearsToFetch
     ? USCIS_H1B_FILES.filter((f) => yearsToFetch.includes(f.year))
-    : USCIS_H1B_FILES.slice(0, 2); // default: latest 2 years for weekly sync
+    : USCIS_H1B_FILES.slice(0, 2);
 
   for (const { year, url } of filesToProcess) {
     try {
       console.log(`[USCIS H-1B] Fetching FY${year}...`);
       const { data } = await axios.get(url, { timeout: 60000, responseType: "text" });
       const rows = parseCsvRows(data);
+      const employers = aggregateByEmployer(rows, year);
 
-      // Actual USCIS CSV headers (normalized):
-      // fiscal_year, employer, initial_approval, initial_denial,
-      // continuing_approval, continuing_denial, naics, tax_id, state, city, zip
-      const ops = rows.map((row) => ({
+      console.log(`[USCIS H-1B] FY${year}: ${rows.length} location rows → ${employers.length} employers`);
+
+      const ops = employers.map((e) => ({
         updateOne: {
-          filter: { fiscalYear: year, employer: row.employer || "", state: row.state || "" },
+          filter: { fiscalYear: year, employer: e.employer, source: "USCIS_HUB" },
           update: {
             $set: {
               fiscalYear: year,
-              employer: row.employer || "",
-              industry: row.naics || "",
-              state: row.state || "",
-              city: row.city || "",
+              employer: e.employer,
+              industry: e.industry,
+              state: e.state,
+              statesPresent: e.statesPresent,
               country: "",
-              initialApprovals: parseNumber(row.initial_approval),
-              initialDenials: parseNumber(row.initial_denial),
-              continuingApprovals: parseNumber(row.continuing_approval),
-              continuingDenials: parseNumber(row.continuing_denial),
+              initialApprovals: e.initialApprovals,
+              initialDenials: e.initialDenials,
+              continuingApprovals: e.continuingApprovals,
+              continuingDenials: e.continuingDenials,
               rfeIssued: 0,
               rfeDecisionApproved: 0,
               rfeDecisionDenied: 0,
@@ -94,7 +166,8 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
         const result = await H1bRecord.bulkWrite(ops, { ordered: false });
         const inserted = result.upsertedCount + result.modifiedCount;
         totalInserted += inserted;
-        console.log(`[USCIS H-1B] FY${year}: ${inserted} records upserted`);
+        const totalApprovals = employers.reduce((s, e) => s + e.initialApprovals, 0);
+        console.log(`[USCIS H-1B] FY${year}: ${inserted} employer records, ${totalApprovals} total initial approvals`);
       }
     } catch (err) {
       console.error(`[USCIS H-1B] FY${year} failed: ${err.message}`);
@@ -107,7 +180,7 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
     lastSyncAt: new Date(),
   });
 
-  console.log(`[USCIS H-1B] Done. Total: ${totalInserted} records`);
+  console.log(`[USCIS H-1B] Done. Total: ${totalInserted} employer records`);
   return totalInserted;
 }
 

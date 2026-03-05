@@ -15,6 +15,12 @@ const DataSyncLog = require("../models/DataSyncLog");
 // Filed alphabetically by fiscal year quarter. New quarters added each release.
 // URL pattern: https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY{YYYY}_Q{N}.xlsx
 const DOL_LCA_FILES = [
+  { year: 2026, quarter: 1, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2026_Q1.xlsx" },
+  { year: 2025, quarter: 4, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q4.xlsx" },
+  { year: 2025, quarter: 3, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q3.xlsx" },
+  { year: 2025, quarter: 2, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q2.xlsx" },
+  { year: 2025, quarter: 1, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2025_Q1.xlsx" },
+  { year: 2024, quarter: 4, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2024_Q4.xlsx" },
   { year: 2024, quarter: 3, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2024_Q3.xlsx" },
   { year: 2024, quarter: 2, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2024_Q2.xlsx" },
   { year: 2024, quarter: 1, url: "https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/LCA_Disclosure_Data_FY2024_Q1.xlsx" },
@@ -50,6 +56,13 @@ function normalizeHeader(h) {
   return String(h || "").toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 }
 
+/**
+ * Parse DOL LCA Excel file — actual column names (from FY2024 format):
+ *   VISA_CLASS, CASE_STATUS, EMPLOYER_NAME, EMPLOYER_STATE,
+ *   TOTAL_WORKER_POSITIONS, NAICS_CODE
+ * Each row = one LCA case; TOTAL_WORKER_POSITIONS = number of workers.
+ * We sum positions by employer per quarter, then aggregate across quarters.
+ */
 function parseXlsxRows(buffer) {
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -65,13 +78,6 @@ function parseXlsxRows(buffer) {
   );
 }
 
-function findField(row, ...candidates) {
-  for (const c of candidates) {
-    if (row[c] !== undefined && row[c] !== "") return row[c];
-  }
-  return "";
-}
-
 async function runDolLcaScraper({ quartersToFetch = null } = {}) {
   const log = await DataSyncLog.create({ source: "DOL_LCA", status: "running" });
   let totalInserted = 0;
@@ -80,68 +86,88 @@ async function runDolLcaScraper({ quartersToFetch = null } = {}) {
     ? DOL_LCA_FILES.filter((f) => quartersToFetch.some((q) => q.year === f.year && q.quarter === f.quarter))
     : DOL_LCA_FILES.slice(0, 2); // default: latest 2 quarters
 
+  // For annual aggregation: collect all quarters' data then upsert per year
+  const annualByEmployer = {}; // key: `${year}|${employer}`
+
   for (const { year, quarter, url } of filesToProcess) {
     try {
       console.log(`[DOL LCA] Fetching FY${year} Q${quarter}...`);
       const { data } = await axios.get(url, {
-        timeout: 120000,
+        timeout: 300000,
         responseType: "arraybuffer",
+        maxContentLength: 300 * 1024 * 1024,
       });
 
       const rows = parseXlsxRows(Buffer.from(data));
-      // DOL LCA files include all visa types; filter to H-1B only
-      const h1bRows = rows.filter((r) => {
-        const visaClass = findField(r, "visa_class", "visa_type", "case_status");
-        return String(visaClass).toUpperCase().includes("H-1B");
-      });
 
-      // Aggregate by employer + state + country for this quarter
-      const aggregated = {};
+      // Filter to H-1B / H-1B1 visa classes
+      const h1bRows = rows.filter((r) =>
+        String(r.visa_class || "").toUpperCase().startsWith("H-1B")
+      );
+
+      console.log(`[DOL LCA] FY${year} Q${quarter}: ${rows.length} total rows, ${h1bRows.length} H-1B rows`);
+
       for (const row of h1bRows) {
-        const employer = findField(row, "employer_name", "employer", "company_name");
-        const state = findField(row, "employer_state", "work_state", "state");
-        const country = findField(row, "country_of_citizenship", "country", "worker_country");
-        const status = findField(row, "case_status", "status");
-        const key = `${year}|${employer}|${state}|${country}`;
+        const employer = (row.employer_name || "").trim();
+        if (!employer) continue;
 
-        if (!aggregated[key]) {
-          aggregated[key] = { employer, state, country, initialApprovals: 0, initialDenials: 0 };
+        const state = (row.employer_state || "").trim();
+        const industry = (row.naics_code || "").trim();
+        // Each LCA covers TOTAL_WORKER_POSITIONS workers
+        const positions = Math.max(1, parseInt(row.total_worker_positions || "1", 10) || 1);
+        const status = String(row.case_status || "").toUpperCase();
+
+        const key = `${year}|${employer}`;
+        if (!annualByEmployer[key]) {
+          annualByEmployer[key] = { year, employer, state, industry, certified: 0, denied: 0 };
         }
-        if (String(status).toUpperCase().includes("CERTIF")) {
-          aggregated[key].initialApprovals += 1;
-        } else if (String(status).toUpperCase().includes("DENIED") || String(status).toUpperCase().includes("WITHDRAW")) {
-          aggregated[key].initialDenials += 1;
+
+        if (status.includes("CERTIFIED") && !status.includes("WITHDRAWN")) {
+          annualByEmployer[key].certified += positions;
+        } else if (status.includes("DENIED")) {
+          annualByEmployer[key].denied += positions;
         }
-      }
-
-      const ops = Object.values(aggregated).map((rec) => ({
-        updateOne: {
-          filter: { fiscalYear: year, employer: rec.employer, country: rec.country, source: "DOL_LCA" },
-          update: {
-            $set: {
-              fiscalYear: year,
-              employer: rec.employer,
-              state: rec.state,
-              country: rec.country,
-              initialApprovals: rec.initialApprovals,
-              initialDenials: rec.initialDenials,
-              source: "DOL_LCA",
-              importedAt: new Date(),
-            },
-          },
-          upsert: true,
-        },
-      }));
-
-      if (ops.length > 0) {
-        const result = await H1bRecord.bulkWrite(ops, { ordered: false });
-        const inserted = result.upsertedCount + result.modifiedCount;
-        totalInserted += inserted;
-        console.log(`[DOL LCA] FY${year} Q${quarter}: ${inserted} employer records upserted`);
+        // "Certified - Withdrawn" and "Withdrawn" are not counted (LCA was pulled)
       }
     } catch (err) {
       console.error(`[DOL LCA] FY${year} Q${quarter} failed: ${err.message}`);
     }
+  }
+
+  // Upsert annual employer records
+  const ops = Object.values(annualByEmployer).map((rec) => ({
+    updateOne: {
+      filter: { fiscalYear: rec.year, employer: rec.employer, source: "DOL_LCA" },
+      update: {
+        $set: {
+          fiscalYear: rec.year,
+          employer: rec.employer,
+          state: rec.state,
+          industry: rec.industry,
+          country: "",
+          initialApprovals: rec.certified,
+          initialDenials: rec.denied,
+          continuingApprovals: 0,
+          continuingDenials: 0,
+          rfeIssued: 0,
+          rfeDecisionApproved: 0,
+          rfeDecisionDenied: 0,
+          source: "DOL_LCA",
+          importedAt: new Date(),
+        },
+      },
+      upsert: true,
+    },
+  }));
+
+  if (ops.length > 0) {
+    // Process in batches of 1000
+    const BATCH = 1000;
+    for (let i = 0; i < ops.length; i += BATCH) {
+      const result = await H1bRecord.bulkWrite(ops.slice(i, i + BATCH), { ordered: false });
+      totalInserted += result.upsertedCount + result.modifiedCount;
+    }
+    console.log(`[DOL LCA] Upserted ${totalInserted} employer records across ${Object.keys(annualByEmployer).length} employers`);
   }
 
   await DataSyncLog.findByIdAndUpdate(log._id, {

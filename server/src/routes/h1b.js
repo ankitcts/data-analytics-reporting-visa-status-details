@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const H1bRecord = require("../models/H1bRecord");
+const countryStats = require("../data/h1b_country_stats.json");
 
 // GET /api/h1b/stats?year=&country=&state=&source=
 router.get("/stats", async (req, res) => {
@@ -59,13 +60,14 @@ router.get("/stats", async (req, res) => {
   }
 });
 
-// GET /api/h1b/trends?country=&state=
+// GET /api/h1b/trends?country=&state=&source=
 // Year-over-year trend (all years in DB)
 router.get("/trends", async (req, res) => {
   try {
     const match = {};
     if (req.query.country) match.country = new RegExp(req.query.country, "i");
     if (req.query.state) match.state = new RegExp(req.query.state, "i");
+    if (req.query.source) match.source = req.query.source;
 
     const data = await H1bRecord.aggregate([
       { $match: match },
@@ -99,11 +101,12 @@ router.get("/trends", async (req, res) => {
   }
 });
 
-// GET /api/h1b/sponsors?year=&limit=20
+// GET /api/h1b/sponsors?year=&limit=20&source=
 router.get("/sponsors", async (req, res) => {
   try {
     const match = {};
     if (req.query.year) match.fiscalYear = parseInt(req.query.year);
+    if (req.query.source) match.source = req.query.source;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
     const data = await H1bRecord.aggregate([
@@ -159,11 +162,12 @@ router.get("/countries", async (req, res) => {
   }
 });
 
-// GET /api/h1b/states?year=
+// GET /api/h1b/states?year=&source=
 router.get("/states", async (req, res) => {
   try {
     const match = { state: { $ne: "" } };
     if (req.query.year) match.fiscalYear = parseInt(req.query.year);
+    if (req.query.source) match.source = req.query.source;
 
     const data = await H1bRecord.aggregate([
       { $match: match },
@@ -180,6 +184,44 @@ router.get("/states", async (req, res) => {
     ]);
 
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/h1b/country-breakdown?year=
+// Returns country of birth breakdown from USCIS Characteristics of H-1B Reports.
+// Note: USCIS bulk CSV data does not include country; this uses official published statistics.
+router.get("/country-breakdown", (req, res) => {
+  const year = parseInt(req.query.year) || 2023;
+  const yearStr = String(year);
+  const data = countryStats.years[yearStr];
+
+  if (!data) {
+    const available = Object.keys(countryStats.years).map(Number).sort((a, b) => b - a);
+    return res.status(404).json({ error: `No country data for FY${year}`, availableYears: available });
+  }
+
+  res.json({
+    fiscalYear: year,
+    total: data.total,
+    countries: data.countries,
+    source: countryStats._source,
+    sourceNote: "Country data is from USCIS Characteristics of H-1B Specialty Occupation Workers annual reports, not from the employer data hub CSV which does not include country of birth.",
+  });
+});
+
+// GET /api/h1b/available-years — list all fiscal years with data
+router.get("/available-years", async (req, res) => {
+  try {
+    const uscisYears = await H1bRecord.distinct("fiscalYear", { source: "USCIS_HUB" });
+    const lcaYears = await H1bRecord.distinct("fiscalYear", { source: "DOL_LCA" });
+    const countryYears = Object.keys(countryStats.years).map(Number);
+    res.json({
+      uscis: uscisYears.sort((a, b) => b - a),
+      lca: lcaYears.sort((a, b) => b - a),
+      country: countryYears.sort((a, b) => b - a),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

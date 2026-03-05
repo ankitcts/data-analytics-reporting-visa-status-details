@@ -4,7 +4,8 @@ const H1bRecordSchema = new mongoose.Schema({
   fiscalYear: { type: Number, required: true, index: true },
   employer: { type: String, default: "" },
   industry: { type: String, default: "" },
-  state: { type: String, default: "" },
+  state: { type: String, default: "" },        // primary state (HQ/first location)
+  statesPresent: { type: String, default: "" }, // comma-separated all states employer operates in
   city: { type: String, default: "" },
   country: { type: String, default: "" },
   initialApprovals: { type: Number, default: 0 },
@@ -18,8 +19,8 @@ const H1bRecordSchema = new mongoose.Schema({
   importedAt: { type: Date, default: Date.now },
 });
 
-// Unique per employer+state+year (USCIS CSV has one row per employer per city/state)
-H1bRecordSchema.index({ fiscalYear: 1, employer: 1, state: 1 }, { unique: true });
+// Unique per employer+year+source (USCIS and DOL LCA can coexist for same employer+year)
+H1bRecordSchema.index({ fiscalYear: 1, employer: 1, source: 1 }, { unique: true });
 H1bRecordSchema.index({ country: 1 });
 H1bRecordSchema.index({ state: 1 });
 

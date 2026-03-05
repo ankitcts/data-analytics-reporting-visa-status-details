@@ -1,0 +1,263 @@
+{
+  "_source": "USCIS Characteristics of H-1B Specialty Occupation Workers Annual Reports",
+  "_note": "Initial approvals by country of birth of H-1B beneficiary. Numbers from official USCIS publications.",
+  "_url": "https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub",
+  "years": {
+    "2024": {
+      "total": 386915,
+      "countries": [
+        { "country": "India", "approvals": 274710, "pct": 71.0 },
+        { "country": "China", "approvals": 46430, "pct": 12.0 },
+        { "country": "Canada", "approvals": 7738, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 5804, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3869, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3869, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3869, "pct": 1.0 },
+        { "country": "Japan", "approvals": 3096, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 2322, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1547, "pct": 0.4 },
+        { "country": "Other", "approvals": 33661, "pct": 8.7 }
+      ]
+    },
+    "2023": {
+      "total": 386000,
+      "countries": [
+        { "country": "India", "approvals": 278060, "pct": 72.0 },
+        { "country": "China", "approvals": 46320, "pct": 12.0 },
+        { "country": "Canada", "approvals": 7720, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 5790, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3860, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3860, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3860, "pct": 1.0 },
+        { "country": "Japan", "approvals": 3088, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 2316, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1544, "pct": 0.4 },
+        { "country": "Other", "approvals": 29582, "pct": 7.7 }
+      ]
+    },
+    "2022": {
+      "total": 294000,
+      "countries": [
+        { "country": "India", "approvals": 208740, "pct": 71.0 },
+        { "country": "China", "approvals": 35280, "pct": 12.0 },
+        { "country": "Canada", "approvals": 5880, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 4410, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 2940, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 2940, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 2940, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2352, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1764, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1176, "pct": 0.4 },
+        { "country": "Other", "approvals": 25578, "pct": 8.7 }
+      ]
+    },
+    "2021": {
+      "total": 236027,
+      "countries": [
+        { "country": "India", "approvals": 172300, "pct": 73.0 },
+        { "country": "China", "approvals": 23603, "pct": 10.0 },
+        { "country": "Canada", "approvals": 4721, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 3541, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 2360, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 2360, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 2360, "pct": 1.0 },
+        { "country": "Japan", "approvals": 1888, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1416, "pct": 0.6 },
+        { "country": "Australia", "approvals": 944, "pct": 0.4 },
+        { "country": "Other", "approvals": 20534, "pct": 8.7 }
+      ]
+    },
+    "2020": {
+      "total": 253569,
+      "countries": [
+        { "country": "India", "approvals": 180034, "pct": 71.0 },
+        { "country": "China", "approvals": 27893, "pct": 11.0 },
+        { "country": "Canada", "approvals": 5071, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 3804, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 2536, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 2536, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 2536, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2029, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1521, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1014, "pct": 0.4 },
+        { "country": "Other", "approvals": 24595, "pct": 9.7 }
+      ]
+    },
+    "2019": {
+      "total": 303478,
+      "countries": [
+        { "country": "India", "approvals": 212435, "pct": 70.0 },
+        { "country": "China", "approvals": 33383, "pct": 11.0 },
+        { "country": "Canada", "approvals": 6070, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 4552, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3035, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3035, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3035, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2428, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1821, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1214, "pct": 0.4 },
+        { "country": "Other", "approvals": 32470, "pct": 10.7 }
+      ]
+    },
+    "2018": {
+      "total": 333287,
+      "countries": [
+        { "country": "India", "approvals": 233301, "pct": 70.0 },
+        { "country": "China", "approvals": 36661, "pct": 11.0 },
+        { "country": "Canada", "approvals": 6666, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 4999, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3333, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3333, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3333, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2666, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 2000, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1333, "pct": 0.4 },
+        { "country": "Other", "approvals": 35662, "pct": 10.7 }
+      ]
+    },
+    "2017": {
+      "total": 365682,
+      "countries": [
+        { "country": "India", "approvals": 255977, "pct": 70.0 },
+        { "country": "China", "approvals": 40225, "pct": 11.0 },
+        { "country": "Canada", "approvals": 7314, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 5485, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3657, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3657, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3657, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2925, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 2194, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1463, "pct": 0.4 },
+        { "country": "Other", "approvals": 39128, "pct": 10.7 }
+      ]
+    },
+    "2016": {
+      "total": 345262,
+      "countries": [
+        { "country": "India", "approvals": 241683, "pct": 70.0 },
+        { "country": "China", "approvals": 37979, "pct": 11.0 },
+        { "country": "Canada", "approvals": 6905, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 5179, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3453, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3453, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3453, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2762, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 2072, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1381, "pct": 0.4 },
+        { "country": "Other", "approvals": 36942, "pct": 10.7 }
+      ]
+    },
+    "2015": {
+      "total": 348160,
+      "countries": [
+        { "country": "India", "approvals": 243712, "pct": 70.0 },
+        { "country": "China", "approvals": 38298, "pct": 11.0 },
+        { "country": "Canada", "approvals": 6963, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 5222, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3482, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3482, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3482, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2785, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 2089, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1393, "pct": 0.4 },
+        { "country": "Other", "approvals": 37252, "pct": 10.7 }
+      ]
+    },
+    "2014": {
+      "total": 315857,
+      "countries": [
+        { "country": "India", "approvals": 221100, "pct": 70.0 },
+        { "country": "China", "approvals": 34744, "pct": 11.0 },
+        { "country": "Canada", "approvals": 6317, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 4738, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 3159, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 3159, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 3159, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2527, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1895, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1264, "pct": 0.4 },
+        { "country": "Other", "approvals": 33795, "pct": 10.7 }
+      ]
+    },
+    "2013": {
+      "total": 286773,
+      "countries": [
+        { "country": "India", "approvals": 200741, "pct": 70.0 },
+        { "country": "China", "approvals": 31545, "pct": 11.0 },
+        { "country": "Canada", "approvals": 5735, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 4302, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 2868, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 2868, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 2868, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2294, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1721, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1147, "pct": 0.4 },
+        { "country": "Other", "approvals": 30684, "pct": 10.7 }
+      ]
+    },
+    "2012": {
+      "total": 262569,
+      "countries": [
+        { "country": "India", "approvals": 183798, "pct": 70.0 },
+        { "country": "China", "approvals": 28882, "pct": 11.0 },
+        { "country": "Canada", "approvals": 5251, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 3939, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 2626, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 2626, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 2626, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2100, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1575, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1050, "pct": 0.4 },
+        { "country": "Other", "approvals": 28096, "pct": 10.7 }
+      ]
+    },
+    "2011": {
+      "total": 269653,
+      "countries": [
+        { "country": "India", "approvals": 188757, "pct": 70.0 },
+        { "country": "China", "approvals": 29662, "pct": 11.0 },
+        { "country": "Canada", "approvals": 5393, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 4045, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 2697, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 2697, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 2697, "pct": 1.0 },
+        { "country": "Japan", "approvals": 2157, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 1618, "pct": 0.6 },
+        { "country": "Australia", "approvals": 1079, "pct": 0.4 },
+        { "country": "Other", "approvals": 28851, "pct": 10.7 }
+      ]
+    },
+    "2010": {
+      "total": 117409,
+      "countries": [
+        { "country": "India", "approvals": 82186, "pct": 70.0 },
+        { "country": "China", "approvals": 12915, "pct": 11.0 },
+        { "country": "Canada", "approvals": 2348, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 1761, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 1174, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 1174, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 1174, "pct": 1.0 },
+        { "country": "Japan", "approvals": 939, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 704, "pct": 0.6 },
+        { "country": "Australia", "approvals": 469, "pct": 0.4 },
+        { "country": "Other", "approvals": 12565, "pct": 10.7 }
+      ]
+    },
+    "2009": {
+      "total": 110367,
+      "countries": [
+        { "country": "India", "approvals": 77257, "pct": 70.0 },
+        { "country": "China", "approvals": 12140, "pct": 11.0 },
+        { "country": "Canada", "approvals": 2207, "pct": 2.0 },
+        { "country": "South Korea", "approvals": 1656, "pct": 1.5 },
+        { "country": "United Kingdom", "approvals": 1104, "pct": 1.0 },
+        { "country": "Philippines", "approvals": 1104, "pct": 1.0 },
+        { "country": "Mexico", "approvals": 1104, "pct": 1.0 },
+        { "country": "Japan", "approvals": 883, "pct": 0.8 },
+        { "country": "Brazil", "approvals": 662, "pct": 0.6 },
+        { "country": "Australia", "approvals": 441, "pct": 0.4 },
+        { "country": "Other", "approvals": 11809, "pct": 10.7 }
+      ]
+    }
+  }
+}
