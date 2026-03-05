@@ -140,11 +140,20 @@ body {
 }
 .data-table td { padding: 7px 10px; border-bottom: 1px solid #1a2234; color: #cbd5e1; }
 .data-table tr:hover td { background: #1a2234; }
-.data-table .dim { color: #475569; }
-.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Global utility classes (also used outside tables) */
+.dim  { color: #475569; }
+.num  { text-align: right; font-variant-numeric: tabular-nums; }
+.green { color: #4ade80; }
+.red   { color: #f87171; }
+.gold  { color: #fbbf24; }
+
+/* Keep table-scoped overrides for specificity */
+.data-table .dim  { color: #475569; }
+.data-table .num  { text-align: right; font-variant-numeric: tabular-nums; }
 .data-table .green { color: #4ade80; }
-.data-table .red { color: #f87171; }
-.data-table .gold { color: #fbbf24; }
+.data-table .red   { color: #f87171; }
+.data-table .gold  { color: #fbbf24; }
 
 /* ===== Info Box ===== */
 .info-box {
@@ -195,6 +204,7 @@ body {
 }
 
 /* ===== Sync Status ===== */
+.sync-section { margin-top: 8px; }
 .sync-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
 .sync-card { background: #1e2130; border: 1px solid #334155; border-radius: 10px; padding: 12px 14px; }
 .sync-card__source { font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; }
