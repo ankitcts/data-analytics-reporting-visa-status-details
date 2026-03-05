@@ -1,76 +1,70 @@
 /**
  * USCIS L-1 (Intracompany Transferee) scraper
  * Source: https://www.uscis.gov/tools/reports-and-studies/immigration-forms-data/nonimmigrant
- * Data: USCIS I-129 annual form data Excel files, FY2010–present
+ * Data: USCIS I-129 quarterly CSV files, FY2016–present
  *
- * USCIS publishes I-129 petition data by visa type. L-1A and L-1B approval/denial
- * counts are available in the "Nonimmigrant" section of the Immigration Forms Data page.
+ * USCIS publishes separate CSVs for L-1A (managers/executives) and L-1B (specialized knowledge).
+ * Each file contains annual totals plus quarterly breakdowns.
+ * URL format: I129_l1{a|b}_performancedata_fy{YYYY}_qtr{1-4}.csv
  */
 const axios = require("axios");
-const XLSX = require("xlsx");
 const L1Record = require("../models/L1Record");
 const DataSyncLog = require("../models/DataSyncLog");
 
-// USCIS I-129 data files for L-1 petitions.
-// Each file covers a fiscal year and includes both L-1A and L-1B breakdowns.
-const USCIS_L1_FILES = [
-  { year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2023_qtr4.xlsx" },
-  { year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2022_qtr4.xlsx" },
-  { year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2021_qtr4.xlsx" },
-  { year: 2020, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2020_qtr4.xlsx" },
-  { year: 2019, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2019_qtr4.xlsx" },
-  { year: 2018, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2018_qtr4.xlsx" },
-  { year: 2017, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2017_qtr4.xlsx" },
-  { year: 2016, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2016_qtr4.xlsx" },
-  { year: 2015, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2015_qtr4.xlsx" },
-  { year: 2014, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2014_qtr4.xlsx" },
-  { year: 2013, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2013_qtr4.xlsx" },
-  { year: 2012, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2012_qtr4.xlsx" },
-  { year: 2011, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2011_qtr4.xlsx" },
-  { year: 2010, url: "https://www.uscis.gov/sites/default/files/document/data/I129_performancedata_fy2010_qtr4.xlsx" },
-];
-
-function normalizeHeader(h) {
-  return String(h || "").toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-}
-
 function parseNumber(val) {
-  if (val === null || val === undefined || val === "") return 0;
-  const n = parseInt(String(val).replace(/,/g, ""), 10);
+  if (!val) return 0;
+  const n = parseInt(String(val).replace(/,/g, "").trim(), 10);
   return isNaN(n) ? 0 : n;
 }
 
-function parseXlsxRows(buffer, sheetName = null) {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const targetSheet = sheetName
-    ? workbook.Sheets[sheetName]
-    : workbook.Sheets[workbook.SheetNames[0]];
-  if (!targetSheet) return [];
-  const raw = XLSX.utils.sheet_to_json(targetSheet, { header: 1 });
-  if (raw.length < 2) return [];
-  const headers = raw[0].map(normalizeHeader);
-  return raw.slice(1).map((row) =>
-    headers.reduce((obj, h, i) => {
-      obj[h] = row[i] !== undefined ? String(row[i]).trim() : "";
-      return obj;
-    }, {})
-  );
-}
+// USCIS publishes one cumulative file per fiscal year quarter (Q1 has FY totals up to that quarter).
+// We use Q1 of the latest available fiscal year (updated data up to Dec 31 of prior year).
+const USCIS_L1_FILES = [
+  { visaType: "L1B", year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2023_qtr1.csv" },
+  { visaType: "L1B", year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2022_qtr1.csv" },
+  { visaType: "L1B", year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2021_qtr1.csv" },
+  { visaType: "L1B", year: 2020, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2020_qtr1.csv" },
+  { visaType: "L1B", year: 2019, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2019_qtr1.csv" },
+  { visaType: "L1B", year: 2018, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2018_qtr1.csv" },
+  { visaType: "L1B", year: 2017, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2017_qtr1.csv" },
+  { visaType: "L1B", year: 2016, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2016_qtr1.csv" },
+];
 
-function findField(row, ...candidates) {
-  for (const c of candidates) {
-    if (row[c] !== undefined && row[c] !== "") return row[c];
+/**
+ * Parse the USCIS L-1 aggregate CSV.
+ * Format: multi-section CSV with "Fiscal Year - Total" section and annual rows like:
+ *   2022,"14,082","13,096","3,191","3,767",,,,,,
+ * Columns: Period, Petitions Received, Approved, Denied, Pending
+ *
+ * Returns array of { year, approved, denied } for all fiscal year total rows.
+ */
+function parseFiscalYearTotals(text) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const results = [];
+  let inFySection = false;
+
+  for (const line of lines) {
+    if (line.includes("Fiscal Year - Total")) { inFySection = true; continue; }
+    if (line.includes("Fiscal Year 20") && line.includes("Quarter")) { inFySection = false; continue; }
+    if (!inFySection) continue;
+
+    // Match rows starting with a 4-digit year
+    const m = line.match(/^"?(\d{4})"?/);
+    if (!m) continue;
+
+    const year = parseInt(m[1], 10);
+    if (year < 2000 || year > 2030) continue;
+
+    // Split on comma, handle quoted numbers like "13,418", strip surrounding quotes
+    const parts = (line.match(/"[^"]*"|[^,]+/g) || []).map((p) => p.replace(/^"|"$/g, ""));
+    const approved = parseNumber(parts[2]);
+    const denied = parseNumber(parts[3]);
+    if (approved > 0 || denied > 0) {
+      results.push({ year, approved, denied });
+    }
   }
-  return "";
-}
 
-function detectVisaType(row) {
-  const category = findField(row, "nonimmigrant_classification", "classification", "visa_type", "category");
-  const cat = String(category).toUpperCase();
-  if (cat.includes("L-1A") || cat.includes("L1A")) return "L1A";
-  if (cat.includes("L-1B") || cat.includes("L1B")) return "L1B";
-  if (cat.includes("L-1") || cat.includes("L1")) return "L1";
-  return null;
+  return results;
 }
 
 async function runUscisL1Scraper({ yearsToFetch = null } = {}) {
@@ -79,56 +73,43 @@ async function runUscisL1Scraper({ yearsToFetch = null } = {}) {
 
   const filesToProcess = yearsToFetch
     ? USCIS_L1_FILES.filter((f) => yearsToFetch.includes(f.year))
-    : USCIS_L1_FILES.slice(0, 2); // default: latest 2 years
+    : USCIS_L1_FILES.slice(0, 2);
 
-  for (const { year, url } of filesToProcess) {
+  for (const { visaType, year, url } of filesToProcess) {
     try {
-      console.log(`[USCIS L1] Fetching FY${year}...`);
-      const { data } = await axios.get(url, {
-        timeout: 120000,
-        responseType: "arraybuffer",
-      });
+      console.log(`[USCIS L1] Fetching ${visaType} FY${year}...`);
+      const { data } = await axios.get(url, { timeout: 60000, responseType: "text" });
 
-      const rows = parseXlsxRows(Buffer.from(data));
-      const l1Rows = rows.filter((r) => detectVisaType(r) !== null);
+      const rows = parseFiscalYearTotals(data);
 
-      const ops = l1Rows.map((row) => {
-        const visaType = detectVisaType(row);
-        const employer = findField(row, "petitioner_name", "employer_name", "employer", "company");
-        const state = findField(row, "petitioner_state", "employer_state", "state");
-        const country = findField(row, "country_of_birth", "country_of_citizenship", "country");
-        const approvals = parseNumber(findField(row, "approvals", "total_approvals", "approved"));
-        const denials = parseNumber(findField(row, "denials", "total_denials", "denied"));
-
-        return {
-          updateOne: {
-            filter: { fiscalYear: year, visaType, employer, country },
-            update: {
-              $set: {
-                fiscalYear: year,
-                visaType,
-                employer,
-                state,
-                country,
-                approvals,
-                denials,
-                source: "USCIS_I129",
-                importedAt: new Date(),
-              },
+      const ops = rows.map(({ year: fy, approved, denied }) => ({
+        updateOne: {
+          filter: { fiscalYear: fy, visaType, employer: "_aggregate_", country: "" },
+          update: {
+            $set: {
+              fiscalYear: fy,
+              visaType,
+              employer: "_aggregate_",
+              state: "",
+              country: "",
+              approvals: approved,
+              denials: denied,
+              source: "USCIS_I129",
+              importedAt: new Date(),
             },
-            upsert: true,
           },
-        };
-      });
+          upsert: true,
+        },
+      }));
 
       if (ops.length > 0) {
         const result = await L1Record.bulkWrite(ops, { ordered: false });
         const inserted = result.upsertedCount + result.modifiedCount;
         totalInserted += inserted;
-        console.log(`[USCIS L1] FY${year}: ${inserted} records upserted`);
+        console.log(`[USCIS L1] ${visaType} FY${year}: ${inserted} annual records upserted`);
       }
     } catch (err) {
-      console.error(`[USCIS L1] FY${year} failed: ${err.message}`);
+      console.error(`[USCIS L1] ${visaType} FY${year} failed: ${err.message}`);
     }
   }
 

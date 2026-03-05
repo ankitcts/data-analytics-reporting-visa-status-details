@@ -51,7 +51,7 @@ async function main() {
   // SEVIS OPT/CPT: all quarters
   if (shouldRun("sevis") || shouldRun("opt")) {
     console.log("\n[4/4] ICE SEVIS OPT/CPT — all quarters");
-    const quarters = SEVIS_FILES.map((f) => f.label);
+    const quarters = SEVIS_FILES.map((f) => f.quarter || f.label);
     await runSevisScraper({ quartersToFetch: quarters });
   }
 

@@ -5,6 +5,7 @@ const H1bRecordSchema = new mongoose.Schema({
   employer: { type: String, default: "" },
   industry: { type: String, default: "" },
   state: { type: String, default: "" },
+  city: { type: String, default: "" },
   country: { type: String, default: "" },
   initialApprovals: { type: Number, default: 0 },
   initialDenials: { type: Number, default: 0 },
@@ -17,7 +18,8 @@ const H1bRecordSchema = new mongoose.Schema({
   importedAt: { type: Date, default: Date.now },
 });
 
-H1bRecordSchema.index({ fiscalYear: 1, employer: 1, country: 1 }, { unique: true });
+// Unique per employer+state+year (USCIS CSV has one row per employer per city/state)
+H1bRecordSchema.index({ fiscalYear: 1, employer: 1, state: 1 }, { unique: true });
 H1bRecordSchema.index({ country: 1 });
 H1bRecordSchema.index({ state: 1 });
 

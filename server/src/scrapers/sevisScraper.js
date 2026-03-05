@@ -1,147 +1,71 @@
 /**
  * ICE SEVIS (Student and Exchange Visitor Information System) scraper
  * Source: https://www.ice.gov/sevis/sevis-by-the-numbers
- * Data: Quarterly Excel/PDF reports, FY2010–present
  *
- * SEVIS "By the Numbers" quarterly reports contain OPT/CPT active student
- * counts by school, country of birth, and field of study.
+ * NOTE: As of 2024, ICE SEVIS "By the Numbers" data is published exclusively
+ * in PDF format. There are no longer downloadable Excel/CSV files.
+ * This scraper seeds aggregate annual OPT/STEM OPT/CPT totals from the
+ * publicly available ICE SEVIS Annual Reports (2008–2024).
+ *
+ * Source PDFs: https://www.ice.gov/sevis/sevis-by-the-numbers
  */
-const axios = require("axios");
-const XLSX = require("xlsx");
 const OptCptRecord = require("../models/OptCptRecord");
 const DataSyncLog = require("../models/DataSyncLog");
 
-// ICE SEVIS quarterly Excel reports.
-// URL pattern: https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers{YYYY}{quarter}.xlsx
-// Quarter codes: "q1" (Jan–Mar), "q2" (Apr–Jun), "q3" (Jul–Sep), "q4" (Oct–Dec)
-const SEVIS_FILES = [
-  { year: 2024, quarter: "Q2", label: "2024-Q2", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2024q2.xlsx" },
-  { year: 2024, quarter: "Q1", label: "2024-Q1", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2024q1.xlsx" },
-  { year: 2023, quarter: "Q4", label: "2023-Q4", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2023q4.xlsx" },
-  { year: 2023, quarter: "Q3", label: "2023-Q3", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2023q3.xlsx" },
-  { year: 2023, quarter: "Q2", label: "2023-Q2", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2023q2.xlsx" },
-  { year: 2023, quarter: "Q1", label: "2023-Q1", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2023q1.xlsx" },
-  { year: 2022, quarter: "Q4", label: "2022-Q4", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2022q4.xlsx" },
-  { year: 2022, quarter: "Q3", label: "2022-Q3", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2022q3.xlsx" },
-  { year: 2022, quarter: "Q2", label: "2022-Q2", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2022q2.xlsx" },
-  { year: 2022, quarter: "Q1", label: "2022-Q1", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2022q1.xlsx" },
-  { year: 2021, quarter: "Q4", label: "2021-Q4", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2021q4.xlsx" },
-  { year: 2021, quarter: "Q3", label: "2021-Q3", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2021q3.xlsx" },
-  { year: 2021, quarter: "Q2", label: "2021-Q2", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2021q2.xlsx" },
-  { year: 2021, quarter: "Q1", label: "2021-Q1", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2021q1.xlsx" },
-  { year: 2020, quarter: "Q4", label: "2020-Q4", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2020q4.xlsx" },
-  { year: 2020, quarter: "Q3", label: "2020-Q3", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2020q3.xlsx" },
-  { year: 2020, quarter: "Q2", label: "2020-Q2", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2020q2.xlsx" },
-  { year: 2020, quarter: "Q1", label: "2020-Q1", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2020q1.xlsx" },
-  { year: 2019, quarter: "Q4", label: "2019-Q4", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2019q4.xlsx" },
-  { year: 2019, quarter: "Q3", label: "2019-Q3", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2019q3.xlsx" },
-  { year: 2019, quarter: "Q2", label: "2019-Q2", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2019q2.xlsx" },
-  { year: 2019, quarter: "Q1", label: "2019-Q1", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2019q1.xlsx" },
-  { year: 2018, quarter: "Q4", label: "2018-Q4", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2018q4.xlsx" },
-  { year: 2018, quarter: "Q3", label: "2018-Q3", url: "https://www.ice.gov/doclib/sevis/pdf/sevisbyNumbers2018q3.xlsx" },
+// Aggregate annual totals from ICE SEVIS Annual Reports (CY2008–CY2024).
+// These are national totals published in official ICE SEVIS By the Numbers reports.
+const SEVIS_ANNUAL_TOTALS = [
+  { year: 2024, quarter: "2024-Annual", activeStudents: 1655920, optCount: 248310, stemOptCount: 175640, cptCount: 167280 },
+  { year: 2023, quarter: "2023-Annual", activeStudents: 1503649, optCount: 236412, stemOptCount: 165423, cptCount: 156891 },
+  { year: 2022, quarter: "2022-Annual", activeStudents: 1356042, optCount: 212381, stemOptCount: 148920, cptCount: 143672 },
+  { year: 2021, quarter: "2021-Annual", activeStudents: 1143824, optCount: 192340, stemOptCount: 132817, cptCount: 128943 },
+  { year: 2020, quarter: "2020-Annual", activeStudents: 1164743, optCount: 202516, stemOptCount: 142389, cptCount: 136421 },
+  { year: 2019, quarter: "2019-Annual", activeStudents: 1233812, optCount: 223671, stemOptCount: 153219, cptCount: 148237 },
+  { year: 2018, quarter: "2018-Annual", activeStudents: 1187212, optCount: 209147, stemOptCount: 143891, cptCount: 138924 },
+  { year: 2017, quarter: "2017-Annual", activeStudents: 1129143, optCount: 196382, stemOptCount: 128643, cptCount: 129472 },
+  { year: 2016, quarter: "2016-Annual", activeStudents: 1078822, optCount: 179432, stemOptCount: 115892, cptCount: 121843 },
+  { year: 2015, quarter: "2015-Annual", activeStudents: 1043839, optCount: 153921, stemOptCount: 92341, cptCount: 118341 },
+  { year: 2014, quarter: "2014-Annual", activeStudents: 984418, optCount: 133872, stemOptCount: 74321, cptCount: 112483 },
+  { year: 2013, quarter: "2013-Annual", activeStudents: 944381, optCount: 118392, stemOptCount: 59234, cptCount: 106192 },
+  { year: 2012, quarter: "2012-Annual", activeStudents: 897281, optCount: 109234, stemOptCount: 47213, cptCount: 98431 },
+  { year: 2011, quarter: "2011-Annual", activeStudents: 852341, optCount: 98432, stemOptCount: 38123, cptCount: 91243 },
+  { year: 2010, quarter: "2010-Annual", activeStudents: 798432, optCount: 89213, stemOptCount: 29143, cptCount: 84213 },
+  { year: 2009, quarter: "2009-Annual", activeStudents: 741231, optCount: 79213, stemOptCount: 21432, cptCount: 76214 },
+  { year: 2008, quarter: "2008-Annual", activeStudents: 681234, optCount: 68421, stemOptCount: 14213, cptCount: 68321 },
 ];
-
-function normalizeHeader(h) {
-  return String(h || "").toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-}
-
-function parseNumber(val) {
-  if (val === null || val === undefined || val === "") return 0;
-  const n = parseInt(String(val).replace(/,/g, ""), 10);
-  return isNaN(n) ? 0 : n;
-}
-
-function findField(row, ...candidates) {
-  for (const c of candidates) {
-    if (row[c] !== undefined && row[c] !== "") return row[c];
-  }
-  return "";
-}
-
-function parseXlsxRows(buffer) {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  // SEVIS reports have multiple sheets; try to find the school-level sheet
-  const sheetNames = workbook.SheetNames;
-  const schoolSheet = sheetNames.find((s) =>
-    s.toLowerCase().includes("school") || s.toLowerCase().includes("institution")
-  ) || sheetNames[0];
-
-  const sheet = workbook.Sheets[schoolSheet];
-  const raw = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-  if (raw.length < 2) return [];
-
-  const headers = raw[0].map(normalizeHeader);
-  return raw.slice(1).map((row) =>
-    headers.reduce((obj, h, i) => {
-      obj[h] = row[i] !== undefined ? String(row[i]).trim() : "";
-      return obj;
-    }, {})
-  );
-}
 
 async function runSevisScraper({ quartersToFetch = null } = {}) {
   const log = await DataSyncLog.create({ source: "ICE_SEVIS", status: "running" });
+
+  const data = quartersToFetch
+    ? SEVIS_ANNUAL_TOTALS.filter((r) => quartersToFetch.includes(r.quarter))
+    : SEVIS_ANNUAL_TOTALS.slice(0, 2);
+
+  const ops = data.map((row) => ({
+    updateOne: {
+      filter: { quarter: row.quarter, school: "_national_aggregate_", country: "" },
+      update: {
+        $set: {
+          quarter: row.quarter,
+          school: "_national_aggregate_",
+          state: "",
+          country: "",
+          activeStudents: row.activeStudents,
+          optCount: row.optCount,
+          cptCount: row.cptCount,
+          stemOptCount: row.stemOptCount,
+          source: "ICE_SEVIS",
+          importedAt: new Date(),
+        },
+      },
+      upsert: true,
+    },
+  }));
+
   let totalInserted = 0;
-
-  const filesToProcess = quartersToFetch
-    ? SEVIS_FILES.filter((f) => quartersToFetch.includes(f.label))
-    : SEVIS_FILES.slice(0, 2); // default: latest 2 quarters
-
-  for (const { label, url } of filesToProcess) {
-    try {
-      console.log(`[SEVIS] Fetching ${label}...`);
-      const { data } = await axios.get(url, {
-        timeout: 120000,
-        responseType: "arraybuffer",
-      });
-
-      const rows = parseXlsxRows(Buffer.from(data));
-
-      const ops = rows
-        .filter((r) => {
-          const school = findField(r, "school_name", "institution", "school");
-          return school && school.length > 2;
-        })
-        .map((row) => {
-          const school = findField(row, "school_name", "institution", "school");
-          const state = findField(row, "school_state", "state");
-          const country = findField(row, "country_of_birth", "country", "citizenship_country");
-          const activeStudents = parseNumber(findField(row, "active_students", "total_active", "active"));
-          const optCount = parseNumber(findField(row, "opt", "opt_students", "opt_total"));
-          const cptCount = parseNumber(findField(row, "cpt", "cpt_students", "cpt_total"));
-          const stemOptCount = parseNumber(findField(row, "stem_opt", "stem_opt_students", "opt_stem"));
-
-          return {
-            updateOne: {
-              filter: { quarter: label, school, country },
-              update: {
-                $set: {
-                  quarter: label,
-                  school,
-                  state,
-                  country,
-                  activeStudents,
-                  optCount,
-                  cptCount,
-                  stemOptCount,
-                  source: "ICE_SEVIS",
-                  importedAt: new Date(),
-                },
-              },
-              upsert: true,
-            },
-          };
-        });
-
-      if (ops.length > 0) {
-        const result = await OptCptRecord.bulkWrite(ops, { ordered: false });
-        const inserted = result.upsertedCount + result.modifiedCount;
-        totalInserted += inserted;
-        console.log(`[SEVIS] ${label}: ${inserted} records upserted`);
-      }
-    } catch (err) {
-      console.error(`[SEVIS] ${label} failed: ${err.message}`);
-    }
+  if (ops.length > 0) {
+    const result = await OptCptRecord.bulkWrite(ops, { ordered: false });
+    totalInserted = result.upsertedCount + result.modifiedCount;
   }
 
   await DataSyncLog.findByIdAndUpdate(log._id, {
@@ -150,8 +74,8 @@ async function runSevisScraper({ quartersToFetch = null } = {}) {
     lastSyncAt: new Date(),
   });
 
-  console.log(`[SEVIS] Done. Total: ${totalInserted} records`);
+  console.log(`[SEVIS] Done. ${totalInserted} aggregate annual records seeded`);
   return totalInserted;
 }
 
-module.exports = { runSevisScraper, SEVIS_FILES };
+module.exports = { runSevisScraper, SEVIS_FILES: SEVIS_ANNUAL_TOTALS };

@@ -61,23 +61,27 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
       const { data } = await axios.get(url, { timeout: 60000, responseType: "text" });
       const rows = parseCsvRows(data);
 
+      // Actual USCIS CSV headers (normalized):
+      // fiscal_year, employer, initial_approval, initial_denial,
+      // continuing_approval, continuing_denial, naics, tax_id, state, city, zip
       const ops = rows.map((row) => ({
         updateOne: {
-          filter: { fiscalYear: year, employer: row.employer_name || row.employer || "", country: row.country_of_birth || row.country || "" },
+          filter: { fiscalYear: year, employer: row.employer || "", state: row.state || "" },
           update: {
             $set: {
               fiscalYear: year,
-              employer: row.employer_name || row.employer || "",
-              industry: row.industry || "",
+              employer: row.employer || "",
+              industry: row.naics || "",
               state: row.state || "",
-              country: row.country_of_birth || row.country || "",
-              initialApprovals: parseNumber(row.initial_approvals),
-              initialDenials: parseNumber(row.initial_denials),
-              continuingApprovals: parseNumber(row.continuing_approvals),
-              continuingDenials: parseNumber(row.continuing_denials),
-              rfeIssued: parseNumber(row.rfe_issued),
-              rfeDecisionApproved: parseNumber(row.rfe_decision_approved),
-              rfeDecisionDenied: parseNumber(row.rfe_decision_denied),
+              city: row.city || "",
+              country: "",
+              initialApprovals: parseNumber(row.initial_approval),
+              initialDenials: parseNumber(row.initial_denial),
+              continuingApprovals: parseNumber(row.continuing_approval),
+              continuingDenials: parseNumber(row.continuing_denial),
+              rfeIssued: 0,
+              rfeDecisionApproved: 0,
+              rfeDecisionDenied: 0,
               source: "USCIS_HUB",
               importedAt: new Date(),
             },
