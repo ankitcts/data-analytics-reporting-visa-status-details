@@ -28,7 +28,7 @@ Public dashboard surfacing US work visa program statistics — H-1B, L-1A/L-1B, 
 
 ```bash
 # Clone repo
-git clone https://github.com/ankkhand/data-analytics-reporting-visa-status-details
+git clone https://github.com/ankitcts/data-analytics-reporting-visa-status-details
 cd data-analytics-reporting-visa-status-details
 
 # Install root + client dependencies

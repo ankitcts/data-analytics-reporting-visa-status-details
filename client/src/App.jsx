@@ -52,7 +52,7 @@ export default function App() {
 
       <footer className="app-footer">
         Data sourced from USCIS H-1B Employer Data Hub, DOL LCA Disclosure Data, and ICE SEVIS. Updated weekly. ·{" "}
-        <a href="https://github.com/ankkhand/data-analytics-reporting-visa-status-details" target="_blank" rel="noreferrer">
+        <a href="https://github.com/ankitcts/data-analytics-reporting-visa-status-details" target="_blank" rel="noreferrer">
           GitHub
         </a>
       </footer>
