@@ -13,22 +13,22 @@ const DataSyncLog = require("../models/DataSyncLog");
 // USCIS publishes H-1B employer data as CSV downloads.
 // The base URL pattern and available years (update as new years are published).
 const USCIS_H1B_FILES = [
-  { year: 2024, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2024.csv" },
-  { year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2023.csv" },
-  { year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2022.csv" },
-  { year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2021.csv" },
-  { year: 2020, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2020.csv" },
-  { year: 2019, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2019.csv" },
-  { year: 2018, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2018.csv" },
-  { year: 2017, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2017.csv" },
-  { year: 2016, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2016.csv" },
-  { year: 2015, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2015.csv" },
-  { year: 2014, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2014.csv" },
-  { year: 2013, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2013.csv" },
-  { year: 2012, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2012.csv" },
-  { year: 2011, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2011.csv" },
-  { year: 2010, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2010.csv" },
-  { year: 2009, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-fy2009.csv" },
+  { year: 2024, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2024.csv" },
+  { year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2023.csv" },
+  { year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2022.csv" },
+  { year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2021.csv" },
+  { year: 2020, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2020.csv" },
+  { year: 2019, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2019.csv" },
+  { year: 2018, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2018.csv" },
+  { year: 2017, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2017.csv" },
+  { year: 2016, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2016.csv" },
+  { year: 2015, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2015.csv" },
+  { year: 2014, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2014.csv" },
+  { year: 2013, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2013.csv" },
+  { year: 2012, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2012.csv" },
+  { year: 2011, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2011.csv" },
+  { year: 2010, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2010.csv" },
+  { year: 2009, url: "https://www.uscis.gov/sites/default/files/document/data/h1b_datahubexport-2009.csv" },
 ];
 
 function parseNumber(val) {
