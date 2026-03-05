@@ -27,12 +27,22 @@ export default function H1bTab() {
   // For USCIS years: source=USCIS_HUB; for LCA years: source=DOL_LCA
   const source = year && isLcaYear(year) ? "DOL_LCA" : "USCIS_HUB";
 
+  // For FY2024-2026 we have aggregate LCA data only (no per-employer breakdown)
+  const isAggregateLcaYear = isLcaYear(year);
+
   const { data: stats }             = useVisaData("/h1b/stats",  { year, source });
   const { data: trends }            = useVisaData("/h1b/trends", { source: "USCIS_HUB" });
   const { data: lcaTrends }         = useVisaData("/h1b/trends", { source: "DOL_LCA" });
-  const { data: sponsors, loading: spLoading } = useVisaData("/h1b/sponsors", { year, limit: 20, source });
+  // Only fetch per-employer data for USCIS years
+  const { data: sponsors, loading: spLoading } = useVisaData(
+    isAggregateLcaYear ? null : "/h1b/sponsors",
+    { year, limit: 20, source }
+  );
   const { data: countryData }       = useVisaData("/h1b/country-breakdown", { year: countryYear });
-  const { data: states }            = useVisaData("/h1b/states", { year, source });
+  const { data: states }            = useVisaData(
+    isAggregateLcaYear ? null : "/h1b/states",
+    { year, source }
+  );
 
   // Merge USCIS + LCA trends into unified chart
   const mergedTrends = React.useMemo(() => {
@@ -113,41 +123,53 @@ export default function H1bTab() {
       )}
 
       <div className="two-col">
-        {/* Top Sponsors Table */}
+        {/* Top Sponsors Table — USCIS years only */}
         <section className="chart-section">
           <div className="section-label">
-            Top 20 H-1B Employers (FY{year || "All"})
-            {year && isLcaYear(year) && <span className="section-note"> · LCA Certifications</span>}
+            {isAggregateLcaYear
+              ? `H-1B Data for FY${year} (DOL LCA)`
+              : `Top 20 H-1B Employers (FY${year || "All"})`}
           </div>
-          {spLoading && <div className="dim" style={{ padding: "12px 0" }}>Loading…</div>}
-          {sponsors && sponsors.length > 0 && (
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Employer</th>
-                    <th>State</th>
-                    <th>Approvals</th>
-                    <th>Denials</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sponsors.map((s, i) => (
-                    <tr key={i}>
-                      <td className="dim">{i + 1}</td>
-                      <td>{s.employer}</td>
-                      <td className="dim">{s.state || "—"}</td>
-                      <td className="num green">{fmt(s.initialApprovals)}</td>
-                      <td className="num red">{fmt(s.initialDenials)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {isAggregateLcaYear ? (
+            <div className="info-panel">
+              <div className="info-panel__title">About FY{year} Data</div>
+              <div className="info-panel__body">
+                Per-employer H-1B data for FY{year} is not yet available as a bulk download from USCIS.
+                The statistics above reflect DOL Labor Condition Application (LCA) certifications —
+                the mandatory prerequisite employers file before submitting H-1B petitions.
+                LCA certifications are a leading indicator of H-1B activity and generally exceed
+                final USCIS approval counts.
+                <br /><br />
+                Source: U.S. Department of Labor, Office of Foreign Labor Certification annual reports.
+              </div>
             </div>
-          )}
-          {sponsors && sponsors.length === 0 && (
-            <div className="dim" style={{ padding: "12px 0" }}>No data available for this year.</div>
+          ) : (
+            <>
+              {spLoading && <div className="dim" style={{ padding: "12px 0" }}>Loading…</div>}
+              {sponsors && sponsors.length > 0 && (
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr><th>#</th><th>Employer</th><th>State</th><th>Approvals</th><th>Denials</th></tr>
+                    </thead>
+                    <tbody>
+                      {sponsors.map((s, i) => (
+                        <tr key={i}>
+                          <td className="dim">{i + 1}</td>
+                          <td>{s.employer}</td>
+                          <td className="dim">{s.state || "—"}</td>
+                          <td className="num green">{fmt(s.initialApprovals)}</td>
+                          <td className="num red">{fmt(s.initialDenials)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {sponsors && sponsors.length === 0 && (
+                <div className="dim" style={{ padding: "12px 0" }}>No data for this selection.</div>
+              )}
+            </>
           )}
         </section>
 
@@ -197,8 +219,8 @@ export default function H1bTab() {
         </section>
       </div>
 
-      {/* State Breakdown */}
-      {states && states.length > 0 && (
+      {/* State Breakdown — USCIS years only */}
+      {!isAggregateLcaYear && states && states.length > 0 && (
         <section className="chart-section">
           <div className="section-label">Approvals by State (FY{year || "All"})</div>
           <ResponsiveContainer width="100%" height={220}>

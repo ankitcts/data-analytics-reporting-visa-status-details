@@ -6,14 +6,15 @@ export function useVisaData(path, params = {}) {
   const query = new URLSearchParams(
     Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== "" && v !== null))
   ).toString();
-  const url = `/api${path}${query ? `?${query}` : ""}`;
+  const url = path ? `/api${path}${query ? `?${query}` : ""}` : null;
 
-  const [data, setData] = useState(cache[url] ?? null);
-  const [loading, setLoading] = useState(!cache[url]);
+  const [data, setData] = useState(url && cache[url] ? cache[url] : null);
+  const [loading, setLoading] = useState(!!url && !cache[url]);
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
 
   useEffect(() => {
+    if (!url) { setData(null); setLoading(false); return; }
     if (cache[url]) {
       setData(cache[url]);
       setLoading(false);
