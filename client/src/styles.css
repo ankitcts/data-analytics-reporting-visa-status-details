@@ -223,15 +223,20 @@ body {
 
 /* ===== Company Explorer ===== */
 .company-explorer { }
-.explorer-form { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-.explorer-input { flex: 1; min-width: 220px; background: #1a2035; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 13px; outline: none; }
+.explorer-wrap { margin-bottom: 10px; }
+.explorer-form { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.explorer-input-wrap { position: relative; flex: 1; min-width: 220px; }
+.explorer-input { width: 100%; box-sizing: border-box; background: #1a2035; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 13px; outline: none; }
 .explorer-input:focus { border-color: #60a5fa; }
 .explorer-input::placeholder { color: #475569; }
-.explorer-btn { background: #1d4ed8; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.explorer-btn { background: #1d4ed8; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; flex-shrink: 0; }
 .explorer-btn:hover:not(:disabled) { background: #2563eb; }
 .explorer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.suggest-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #1e2130; border: 1px solid #334155; border-radius: 8px; list-style: none; margin: 0; padding: 4px 0; z-index: 50; max-height: 220px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.suggest-item { padding: 7px 14px; font-size: 12px; color: #cbd5e1; cursor: pointer; }
+.suggest-item:hover { background: #1a3a5c; color: #60a5fa; }
 .explorer-result { margin-top: 14px; }
-.explorer-company-name { font-size: 16px; font-weight: 700; color: #60a5fa; margin-bottom: 14px; letter-spacing: -0.01em; }
+.explorer-company-name { font-size: 16px; font-weight: 700; color: #60a5fa; margin-bottom: 6px; letter-spacing: -0.01em; }
 
 /* ===== Employers Toolbar ===== */
 .employers-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }

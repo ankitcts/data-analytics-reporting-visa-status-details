@@ -299,13 +299,39 @@ router.get("/employers", async (req, res) => {
   }
 });
 
+// GET /api/h1b/employer-suggest?q=INFOSYS&limit=10
+// Autocomplete: return distinct employer names matching partial query
+router.get("/employer-suggest", async (req, res) => {
+  try {
+    if (!req.query.q || req.query.q.trim().length < 2)
+      return res.json([]);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 30);
+    const safe  = req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const names = await H1bRecord.distinct("employer", {
+      employer: new RegExp(safe, "i"),
+      source: "USCIS_HUB",   // suggest from granular data only
+    });
+    // Sort: exact-start matches first, then alphabetical
+    const re = new RegExp(`^${safe}`, "i");
+    names.sort((a, b) => {
+      const aStart = re.test(a) ? 0 : 1;
+      const bStart = re.test(b) ? 0 : 1;
+      return aStart - bStart || a.localeCompare(b);
+    });
+    res.json(names.slice(0, limit));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/h1b/company?name=COMPANY_NAME&source=
-// Full year-by-year history for a single company
+// Full year-by-year history for a single company (partial name match, aggregated)
 router.get("/company", async (req, res) => {
   try {
     if (!req.query.name) return res.status(400).json({ error: "name param required" });
 
-    const match = { employer: new RegExp(`^${req.query.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") };
+    const safe  = req.query.name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = { employer: new RegExp(safe, "i") };
     if (req.query.source) match.source = req.query.source;
 
     const data = await H1bRecord.aggregate([
@@ -355,7 +381,9 @@ router.get("/company", async (req, res) => {
     ]);
 
     if (!data.length) return res.status(404).json({ error: "No data found for this employer" });
-    res.json({ employer: data[0].employer, years: data });
+    // Collect distinct employer names that matched
+    const matchedNames = await H1bRecord.distinct("employer", { employer: new RegExp(safe, "i") });
+    res.json({ employer: matchedNames.length === 1 ? matchedNames[0] : req.query.name.trim(), matchedNames, years: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

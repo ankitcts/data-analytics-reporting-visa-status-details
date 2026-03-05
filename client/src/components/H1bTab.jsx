@@ -30,21 +30,39 @@ const ttStyle = { background: "#1e2130", border: "1px solid #334155", borderRadi
 
 // ─── Company Explorer ───────────────────────────────────────────────────────
 function CompanyExplorer() {
-  const [query, setQuery]   = useState("");
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult]   = useState(null);
-  const [error, setError]     = useState(null);
-  const inputRef = useRef(null);
+  const [query, setQuery]       = useState("");
+  const [suggestions, setSuggs] = useState([]);
+  const [showSuggs, setShowSuggs] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [result, setResult]     = useState(null);
+  const [error, setError]       = useState(null);
+  const suggestTimer            = useRef(null);
+  const inputRef                = useRef(null);
+
+  // Debounced autocomplete
+  const fetchSuggestions = useCallback((q) => {
+    clearTimeout(suggestTimer.current);
+    if (q.trim().length < 2) { setSuggs([]); setShowSuggs(false); return; }
+    suggestTimer.current = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/h1b/employer-suggest?q=${encodeURIComponent(q.trim())}`);
+        const d = await r.json();
+        setSuggs(Array.isArray(d) ? d : []);
+        setShowSuggs(true);
+      } catch { setSuggs([]); }
+    }, 280);
+  }, []);
 
   const lookup = useCallback(async (name) => {
     if (!name.trim()) return;
+    setShowSuggs(false);
+    setSuggs([]);
     setLoading(true);
     setError(null);
     setResult(null);
     try {
       const r = await fetch(`/api/h1b/company?name=${encodeURIComponent(name.trim())}`);
-      if (r.status === 404) { setError("No H-1B records found for this employer."); setLoading(false); return; }
+      if (r.status === 404) { setError(`No H-1B records found for "${name.trim()}".`); setLoading(false); return; }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       setResult(d);
@@ -57,8 +75,13 @@ function CompanyExplorer() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSearch(query);
     lookup(query);
+  };
+
+  const pickSuggestion = (name) => {
+    setQuery(name);
+    setShowSuggs(false);
+    lookup(name);
   };
 
   const totalInitial     = result ? result.years.reduce((s, r) => s + (r.initialApprovals || 0), 0) : 0;
@@ -73,25 +96,46 @@ function CompanyExplorer() {
         Search any employer to see their full H-1B history across all available years.
       </p>
 
-      <form className="explorer-form" onSubmit={handleSubmit}>
-        <input
-          ref={inputRef}
-          className="explorer-input"
-          type="text"
-          placeholder="e.g. INFOSYS, GOOGLE, AMAZON, TATA CONSULTANCY…"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        <button className="explorer-btn" type="submit" disabled={loading}>
-          {loading ? "Searching…" : "Search"}
-        </button>
-      </form>
+      <div className="explorer-wrap">
+        <form className="explorer-form" onSubmit={handleSubmit}>
+          <div className="explorer-input-wrap">
+            <input
+              ref={inputRef}
+              className="explorer-input"
+              type="text"
+              placeholder="e.g. INFOSYS, GOOGLE, AMAZON, TATA CONSULTANCY…"
+              value={query}
+              onChange={e => { setQuery(e.target.value); fetchSuggestions(e.target.value); }}
+              onBlur={() => setTimeout(() => setShowSuggs(false), 200)}
+              onFocus={() => suggestions.length > 0 && setShowSuggs(true)}
+              autoComplete="off"
+            />
+            {showSuggs && suggestions.length > 0 && (
+              <ul className="suggest-list">
+                {suggestions.map(s => (
+                  <li key={s} className="suggest-item" onMouseDown={() => pickSuggestion(s)}>{s}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button className="explorer-btn" type="submit" disabled={loading}>
+            {loading ? "Searching…" : "Search"}
+          </button>
+        </form>
+      </div>
 
       {error && <div className="dim" style={{ color: "#f87171", marginTop: 10 }}>{error}</div>}
 
       {result && (
         <div className="explorer-result">
           <div className="explorer-company-name">{result.employer}</div>
+          {result.matchedNames && result.matchedNames.length > 1 && (
+            <div className="dim" style={{ fontSize: 11, marginBottom: 10 }}>
+              Aggregating {result.matchedNames.length} matching entries:&nbsp;
+              {result.matchedNames.slice(0, 5).join(" · ")}
+              {result.matchedNames.length > 5 ? ` · +${result.matchedNames.length - 5} more` : ""}
+            </div>
+          )}
 
           {/* Summary KPIs */}
           <div className="kpi-grid kpi-grid--compact" style={{ marginBottom: 16 }}>
