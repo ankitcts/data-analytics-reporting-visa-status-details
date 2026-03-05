@@ -218,6 +218,35 @@ body {
 .info-panel__title { font-size: 13px; font-weight: 700; color: #60a5fa; margin-bottom: 8px; }
 .info-panel__body { font-size: 13px; color: #94a3b8; line-height: 1.65; }
 
+/* ===== KPI Section Title ===== */
+.kpi-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; margin-bottom: 8px; padding-left: 2px; }
+
+/* ===== Company Explorer ===== */
+.company-explorer { }
+.explorer-form { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.explorer-input { flex: 1; min-width: 220px; background: #1a2035; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; color: #e2e8f0; font-size: 13px; outline: none; }
+.explorer-input:focus { border-color: #60a5fa; }
+.explorer-input::placeholder { color: #475569; }
+.explorer-btn { background: #1d4ed8; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.explorer-btn:hover:not(:disabled) { background: #2563eb; }
+.explorer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.explorer-result { margin-top: 14px; }
+.explorer-company-name { font-size: 16px; font-weight: 700; color: #60a5fa; margin-bottom: 14px; letter-spacing: -0.01em; }
+
+/* ===== Employers Toolbar ===== */
+.employers-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.sort-tabs { display: flex; gap: 4px; flex-shrink: 0; }
+.sort-tab { background: #1a2035; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.sort-tab:hover { border-color: #60a5fa; color: #60a5fa; }
+.sort-tab--active { background: #1e3a5f; border-color: #60a5fa; color: #60a5fa; font-weight: 600; }
+
+/* ===== Pagination ===== */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; }
+.pagination button { background: #1a2035; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; padding: 5px 10px; font-size: 13px; cursor: pointer; }
+.pagination button:hover:not(:disabled) { border-color: #60a5fa; color: #60a5fa; }
+.pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
+.page-info { font-size: 12px; color: #475569; padding: 0 8px; }
+
 /* ===== Loading ===== */
 .loading { color: #475569; font-size: 13px; padding: 8px 0; }
 

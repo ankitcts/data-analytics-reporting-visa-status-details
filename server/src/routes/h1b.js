@@ -211,6 +211,156 @@ router.get("/country-breakdown", (req, res) => {
   });
 });
 
+// GET /api/h1b/employers?year=&search=&page=1&limit=50&sort=initial&source=
+// Paginated, searchable employer list
+router.get("/employers", async (req, res) => {
+  try {
+    const match = {};
+    if (req.query.year) match.fiscalYear = parseInt(req.query.year);
+    if (req.query.source) match.source = req.query.source;
+    if (req.query.search) match.employer = new RegExp(req.query.search.trim(), "i");
+
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 50), 200);
+    const skip  = (page - 1) * limit;
+
+    const sortField = req.query.sort === "continuing" ? "continuingApprovals"
+                    : req.query.sort === "denials"    ? "initialDenials"
+                    : req.query.sort === "total"      ? "totalIssued"
+                    : "initialApprovals";
+
+    const pipeline = [
+      { $match: match },
+      {
+        $group: {
+          _id: "$employer",
+          employer: { $first: "$employer" },
+          state: { $first: "$state" },
+          initialApprovals: { $sum: "$initialApprovals" },
+          initialDenials: { $sum: "$initialDenials" },
+          continuingApprovals: { $sum: "$continuingApprovals" },
+          continuingDenials: { $sum: "$continuingDenials" },
+          rfeIssued: { $sum: "$rfeIssued" },
+        },
+      },
+      {
+        $addFields: {
+          totalIssued: { $add: ["$initialApprovals", "$continuingApprovals"] },
+          denialRate: {
+            $cond: [
+              { $gt: [{ $add: ["$initialApprovals", "$initialDenials"] }, 0] },
+              {
+                $multiply: [
+                  { $divide: ["$initialDenials", { $add: ["$initialApprovals", "$initialDenials"] }] },
+                  100,
+                ],
+              },
+              0,
+            ],
+          },
+        },
+      },
+      { $sort: { [sortField]: -1 } },
+    ];
+
+    // Count total (without pagination)
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const [countResult] = await H1bRecord.aggregate(countPipeline);
+    const total = countResult ? countResult.total : 0;
+
+    // Paginated data
+    pipeline.push({ $skip: skip }, { $limit: limit });
+    pipeline.push({
+      $project: {
+        _id: 0,
+        employer: 1,
+        state: 1,
+        initialApprovals: 1,
+        initialDenials: 1,
+        continuingApprovals: 1,
+        continuingDenials: 1,
+        rfeIssued: 1,
+        totalIssued: 1,
+        denialRate: 1,
+      },
+    });
+
+    const data = await H1bRecord.aggregate(pipeline);
+
+    res.json({
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+      data,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/h1b/company?name=COMPANY_NAME&source=
+// Full year-by-year history for a single company
+router.get("/company", async (req, res) => {
+  try {
+    if (!req.query.name) return res.status(400).json({ error: "name param required" });
+
+    const match = { employer: new RegExp(`^${req.query.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") };
+    if (req.query.source) match.source = req.query.source;
+
+    const data = await H1bRecord.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: "$fiscalYear",
+          fiscalYear: { $first: "$fiscalYear" },
+          employer: { $first: "$employer" },
+          state: { $first: "$state" },
+          source: { $first: "$source" },
+          initialApprovals: { $sum: "$initialApprovals" },
+          initialDenials: { $sum: "$initialDenials" },
+          continuingApprovals: { $sum: "$continuingApprovals" },
+          continuingDenials: { $sum: "$continuingDenials" },
+          rfeIssued: { $sum: "$rfeIssued" },
+        },
+      },
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          _id: 0,
+          fiscalYear: 1,
+          employer: 1,
+          state: 1,
+          source: 1,
+          initialApprovals: 1,
+          initialDenials: 1,
+          continuingApprovals: 1,
+          continuingDenials: 1,
+          rfeIssued: 1,
+          totalIssued: { $add: ["$initialApprovals", "$continuingApprovals"] },
+          denialRate: {
+            $cond: [
+              { $gt: [{ $add: ["$initialApprovals", "$initialDenials"] }, 0] },
+              {
+                $multiply: [
+                  { $divide: ["$initialDenials", { $add: ["$initialApprovals", "$initialDenials"] }] },
+                  100,
+                ],
+              },
+              0,
+            ],
+          },
+        },
+      },
+    ]);
+
+    if (!data.length) return res.status(404).json({ error: "No data found for this employer" });
+    res.json({ employer: data[0].employer, years: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/h1b/available-years — list all fiscal years with data
 router.get("/available-years", async (req, res) => {
   try {
