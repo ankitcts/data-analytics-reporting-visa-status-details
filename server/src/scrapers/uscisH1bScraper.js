@@ -107,4 +107,4 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
   return totalInserted;
 }
 
-module.exports = { runUscisH1bScraper };
+module.exports = { runUscisH1bScraper, USCIS_H1B_FILES };
