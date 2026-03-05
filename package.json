@@ -1,0 +1,41 @@
+{
+  "name": "data-analytics-reporting-visa-status-details",
+  "version": "1.0.0",
+  "description": "US Visa program analytics dashboard: H-1B, L-1A/L-1B, OPT/CPT",
+  "scripts": {
+    "start:server": "node server/index.js",
+    "start:client": "webpack-dev-server --config client/webpack.dev.js",
+    "dev": "concurrently \"npm run start:server\" \"npm run start:client\"",
+    "build": "webpack --mode production --config client/webpack.prod.js",
+    "seed": "node scripts/seed-historical.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.2",
+    "node-cron": "^3.0.3",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.5",
+    "@babel/preset-env": "^7.18.2",
+    "@babel/preset-react": "^7.17.12",
+    "babel-loader": "^8.2.5",
+    "css-loader": "^7.1.2",
+    "html-webpack-plugin": "^5.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.12.7",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.9.2",
+    "webpack-merge": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
