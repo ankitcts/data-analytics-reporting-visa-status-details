@@ -93,6 +93,7 @@ function aggregateByEmployer(rows, year) {
       byEmployer[employer] = {
         employer,
         industry: row.naics || "",
+        naicsCode: row.naics || "",
         // primary state = state of largest location (first occurrence keeps the state)
         state: row.state || "",
         initialApprovals: 0,
@@ -125,7 +126,7 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
 
   const filesToProcess = yearsToFetch
     ? USCIS_H1B_FILES.filter((f) => yearsToFetch.includes(f.year))
-    : USCIS_H1B_FILES.slice(0, 2);
+    : USCIS_H1B_FILES;
 
   for (const { year, url } of filesToProcess) {
     try {
@@ -144,6 +145,7 @@ async function runUscisH1bScraper({ yearsToFetch = null } = {}) {
               fiscalYear: year,
               employer: e.employer,
               industry: e.industry,
+              naicsCode: e.naicsCode,
               state: e.state,
               statesPresent: e.statesPresent,
               country: "",

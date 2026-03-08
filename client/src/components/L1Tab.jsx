@@ -12,10 +12,15 @@ function fmt(n) {
 export default function L1Tab() {
   const [year, setYear] = useState("2023");
   const [visaType, setVisaType] = useState("");
+  const [showEmployers, setShowEmployers] = useState(false);
 
   const { data: stats } = useVisaData("/l1/stats", { year, type: visaType });
   const { data: trends } = useVisaData("/l1/trends", { type: visaType });
   const { data: countries } = useVisaData("/l1/countries", { year, type: visaType, limit: 15 });
+  const { data: sponsors } = useVisaData(
+    showEmployers ? "/l1/employers" : null,
+    { year, type: visaType, limit: 20 }
+  );
 
   return (
     <div className="tab-content">
@@ -56,7 +61,38 @@ export default function L1Tab() {
         <strong>L-1A</strong> — Intracompany transferees in managerial or executive roles. Max stay: 7 years. Eligible for EB-1C green card (no PERM required).
         <br />
         <strong>L-1B</strong> — Intracompany transferees with specialized knowledge. Max stay: 5 years. Typically uses EB-2/EB-3 green card path.
+        <br />
+        <strong>Cross-visa:</strong> L-1A filers are often eligible for EB-1C green card — see the <em>EB Green Cards</em> tab for category breakdown.
       </div>
+
+      {/* Top Sponsors */}
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <button className="explorer-btn" style={{ fontSize: 13, padding: "8px 24px" }}
+          onClick={() => setShowEmployers((v) => !v)}>
+          {showEmployers ? "Hide" : "Show"} Top L-1 Employers
+        </button>
+      </div>
+      {showEmployers && sponsors && sponsors.length > 0 && (
+        <section className="chart-section">
+          <div className="section-label">Top L-1 Employers (FY{year || "All"})</div>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>#</th><th>Employer</th><th>State</th><th>Approvals</th><th>Denials</th></tr></thead>
+              <tbody>
+                {sponsors.map((s, i) => (
+                  <tr key={i}>
+                    <td className="dim">{i + 1}</td>
+                    <td>{s.employer}</td>
+                    <td className="dim">{s.state || "—"}</td>
+                    <td className="num green">{fmt(s.approvals)}</td>
+                    <td className="num red">{fmt(s.denials)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {trends && trends.length > 0 && (
         <section className="chart-section">

@@ -383,7 +383,24 @@ router.get("/company", async (req, res) => {
     if (!data.length) return res.status(404).json({ error: "No data found for this employer" });
     // Collect distinct employer names that matched
     const matchedNames = await H1bRecord.distinct("employer", { employer: new RegExp(safe, "i") });
-    res.json({ employer: matchedNames.length === 1 ? matchedNames[0] : req.query.name.trim(), matchedNames, years: data });
+
+    // Cross-visa link flags — quick exists checks
+    const PERMRecord = require("../models/PERMRecord");
+    const EbRecord   = require("../models/EbRecord");
+    const L1Record   = require("../models/L1Record");
+    const empMatch   = { employer: new RegExp(safe, "i") };
+    const [hasPermData, hasEbData, hasL1Data] = await Promise.all([
+      PERMRecord.exists(empMatch),
+      EbRecord.exists(empMatch),
+      L1Record.exists(empMatch),
+    ]);
+
+    res.json({
+      employer: matchedNames.length === 1 ? matchedNames[0] : req.query.name.trim(),
+      matchedNames,
+      years: data,
+      crossVisaLinks: { hasPermData: !!hasPermData, hasEbData: !!hasEbData, hasL1Data: !!hasL1Data },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

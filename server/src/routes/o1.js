@@ -1,35 +1,44 @@
 const express = require("express");
 const router = express.Router();
-const L1Record = require("../models/L1Record");
+const O1Record = require("../models/O1Record");
 
-// GET /api/l1/stats?year=&type=&country=
+// GET /api/o1/stats?year=&subType=&country=
 router.get("/stats", async (req, res) => {
   try {
     const match = {};
     if (req.query.year) match.fiscalYear = parseInt(req.query.year);
-    if (req.query.type) match.visaType = req.query.type.toUpperCase();
+    if (req.query.subType) match.subType = req.query.subType.toUpperCase();
     if (req.query.country) match.country = new RegExp(req.query.country, "i");
 
-    const [result] = await L1Record.aggregate([
+    const [result] = await O1Record.aggregate([
       { $match: match },
       {
         $group: {
           _id: null,
+          totalReceipts: { $sum: "$receipts" },
           totalApprovals: { $sum: "$approvals" },
           totalDenials: { $sum: "$denials" },
-          uniqueEmployers: { $addToSet: "$employer" },
+          totalRfe: { $sum: "$rfeIssued" },
         },
       },
       {
         $project: {
           _id: 0,
+          totalReceipts: 1,
           totalApprovals: 1,
           totalDenials: 1,
-          uniqueEmployers: { $size: "$uniqueEmployers" },
+          totalRfe: 1,
           approvalRate: {
             $cond: [
               { $gt: [{ $add: ["$totalApprovals", "$totalDenials"] }, 0] },
               { $multiply: [{ $divide: ["$totalApprovals", { $add: ["$totalApprovals", "$totalDenials"] }] }, 100] },
+              0,
+            ],
+          },
+          rfeRate: {
+            $cond: [
+              { $gt: ["$totalReceipts", 0] },
+              { $multiply: [{ $divide: ["$totalRfe", "$totalReceipts"] }, 100] },
               0,
             ],
           },
@@ -43,19 +52,20 @@ router.get("/stats", async (req, res) => {
   }
 });
 
-// GET /api/l1/trends?type=
+// GET /api/o1/trends?subType=
 router.get("/trends", async (req, res) => {
   try {
     const match = {};
-    if (req.query.type) match.visaType = req.query.type.toUpperCase();
+    if (req.query.subType) match.subType = req.query.subType.toUpperCase();
 
-    const data = await L1Record.aggregate([
+    const data = await O1Record.aggregate([
       { $match: match },
       {
         $group: {
-          _id: { year: "$fiscalYear", visaType: "$visaType" },
+          _id: { year: "$fiscalYear", subType: "$subType" },
           approvals: { $sum: "$approvals" },
           denials: { $sum: "$denials" },
+          receipts: { $sum: "$receipts" },
         },
       },
       { $sort: { "_id.year": 1 } },
@@ -63,9 +73,10 @@ router.get("/trends", async (req, res) => {
         $project: {
           _id: 0,
           year: "$_id.year",
-          visaType: "$_id.visaType",
+          subType: "$_id.subType",
           approvals: 1,
           denials: 1,
+          receipts: 1,
         },
       },
     ]);
@@ -76,15 +87,15 @@ router.get("/trends", async (req, res) => {
   }
 });
 
-// GET /api/l1/countries?year=&type=
+// GET /api/o1/countries?year=&subType=&limit=50
 router.get("/countries", async (req, res) => {
   try {
     const match = { country: { $ne: "" } };
     if (req.query.year) match.fiscalYear = parseInt(req.query.year);
-    if (req.query.type) match.visaType = req.query.type.toUpperCase();
+    if (req.query.subType) match.subType = req.query.subType.toUpperCase();
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
 
-    const data = await L1Record.aggregate([
+    const data = await O1Record.aggregate([
       { $match: match },
       {
         $group: {
@@ -97,36 +108,6 @@ router.get("/countries", async (req, res) => {
       { $sort: { approvals: -1 } },
       { $limit: limit },
       { $project: { _id: 0, country: 1, approvals: 1, denials: 1 } },
-    ]);
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /api/l1/employers?year=&type=&limit=20
-router.get("/employers", async (req, res) => {
-  try {
-    const match = { employer: { $ne: "", $ne: "_aggregate_" } };
-    if (req.query.year) match.fiscalYear = parseInt(req.query.year);
-    if (req.query.type) match.visaType = req.query.type.toUpperCase();
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-
-    const data = await L1Record.aggregate([
-      { $match: match },
-      {
-        $group: {
-          _id: "$employer",
-          employer: { $first: "$employer" },
-          state: { $first: "$state" },
-          approvals: { $sum: "$approvals" },
-          denials: { $sum: "$denials" },
-        },
-      },
-      { $sort: { approvals: -1 } },
-      { $limit: limit },
-      { $project: { _id: 0, employer: 1, state: 1, approvals: 1, denials: 1 } },
     ]);
 
     res.json(data);

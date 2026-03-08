@@ -15,6 +15,10 @@ const H1bRecordSchema = new mongoose.Schema({
   rfeIssued: { type: Number, default: 0 },
   rfeDecisionApproved: { type: Number, default: 0 },
   rfeDecisionDenied: { type: Number, default: 0 },
+  wageLevel:      { type: String, default: "" },
+  wageLevelCode:  { type: String, default: "" },
+  totalPositions: { type: Number, default: 0 },
+  naicsCode:      { type: String, default: "" },
   source: { type: String, enum: ["USCIS_HUB", "DOL_LCA", "DHS_YEARBOOK"], required: true },
   importedAt: { type: Date, default: Date.now },
 });
@@ -23,5 +27,6 @@ const H1bRecordSchema = new mongoose.Schema({
 H1bRecordSchema.index({ fiscalYear: 1, employer: 1, source: 1 }, { unique: true });
 H1bRecordSchema.index({ country: 1 });
 H1bRecordSchema.index({ state: 1 });
+H1bRecordSchema.index({ employer: 1, fiscalYear: 1 });
 
 module.exports = mongoose.model("H1bRecord", H1bRecordSchema);

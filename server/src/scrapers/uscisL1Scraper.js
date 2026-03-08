@@ -20,6 +20,14 @@ function parseNumber(val) {
 // USCIS publishes one cumulative file per fiscal year quarter (Q1 has FY totals up to that quarter).
 // We use Q1 of the latest available fiscal year (updated data up to Dec 31 of prior year).
 const USCIS_L1_FILES = [
+  { visaType: "L1A", year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2023_qtr1.csv" },
+  { visaType: "L1A", year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2022_qtr1.csv" },
+  { visaType: "L1A", year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2021_qtr1.csv" },
+  { visaType: "L1A", year: 2020, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2020_qtr1.csv" },
+  { visaType: "L1A", year: 2019, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2019_qtr1.csv" },
+  { visaType: "L1A", year: 2018, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2018_qtr1.csv" },
+  { visaType: "L1A", year: 2017, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2017_qtr1.csv" },
+  { visaType: "L1A", year: 2016, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1a_performancedata_fy2016_qtr1.csv" },
   { visaType: "L1B", year: 2023, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2023_qtr1.csv" },
   { visaType: "L1B", year: 2022, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2022_qtr1.csv" },
   { visaType: "L1B", year: 2021, url: "https://www.uscis.gov/sites/default/files/document/data/I129_l1b_performancedata_fy2021_qtr1.csv" },
@@ -56,11 +64,14 @@ function parseFiscalYearTotals(text) {
     if (year < 2000 || year > 2030) continue;
 
     // Split on comma, handle quoted numbers like "13,418", strip surrounding quotes
+    // Columns: Period, Received, Approved, Denied, Pending
     const parts = (line.match(/"[^"]*"|[^,]+/g) || []).map((p) => p.replace(/^"|"$/g, ""));
+    const received = parseNumber(parts[1]);
     const approved = parseNumber(parts[2]);
     const denied = parseNumber(parts[3]);
+    const pending = parseNumber(parts[4]);
     if (approved > 0 || denied > 0) {
-      results.push({ year, approved, denied });
+      results.push({ year, received, approved, denied, pending });
     }
   }
 
@@ -82,7 +93,7 @@ async function runUscisL1Scraper({ yearsToFetch = null } = {}) {
 
       const rows = parseFiscalYearTotals(data);
 
-      const ops = rows.map(({ year: fy, approved, denied }) => ({
+      const ops = rows.map(({ year: fy, approved, denied, received, pending }) => ({
         updateOne: {
           filter: { fiscalYear: fy, visaType, employer: "_aggregate_", country: "" },
           update: {
@@ -94,6 +105,8 @@ async function runUscisL1Scraper({ yearsToFetch = null } = {}) {
               country: "",
               approvals: approved,
               denials: denied,
+              receipts: received || 0,
+              pending: pending || 0,
               source: "USCIS_I129",
               importedAt: new Date(),
             },

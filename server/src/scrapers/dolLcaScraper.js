@@ -119,7 +119,13 @@ async function runDolLcaScraper({ quartersToFetch = null } = {}) {
 
         const key = `${year}|${employer}`;
         if (!annualByEmployer[key]) {
-          annualByEmployer[key] = { year, employer, state, industry, certified: 0, denied: 0 };
+          annualByEmployer[key] = { year, employer, state, industry, certified: 0, denied: 0, wageLevelCounts: {} };
+        }
+
+        const wageLevel = (row.wage_level || row.prevailing_wage_level || "").trim();
+        if (wageLevel) {
+          annualByEmployer[key].wageLevelCounts[wageLevel] =
+            (annualByEmployer[key].wageLevelCounts[wageLevel] || 0) + positions;
         }
 
         if (status.includes("CERTIFIED") && !status.includes("WITHDRAWN")) {
@@ -134,6 +140,24 @@ async function runDolLcaScraper({ quartersToFetch = null } = {}) {
     }
   }
 
+  // Compute modal wage level for each employer
+  for (const rec of Object.values(annualByEmployer)) {
+    const counts = rec.wageLevelCounts || {};
+    const entries = Object.entries(counts);
+    if (entries.length > 0) {
+      entries.sort((a, b) => b[1] - a[1]);
+      const modal = entries[0][0];
+      rec.wageLevel = modal;
+      // Normalize to code: "Level I" -> "L1", etc.
+      const codeMap = { "I": "L1", "II": "L2", "III": "L3", "IV": "L4" };
+      const match = modal.match(/\b(I{1,3}V?|IV)\b/);
+      rec.wageLevelCode = match ? (codeMap[match[1]] || "") : "";
+    } else {
+      rec.wageLevel = "";
+      rec.wageLevelCode = "";
+    }
+  }
+
   // Upsert annual employer records
   const ops = Object.values(annualByEmployer).map((rec) => ({
     updateOne: {
@@ -144,6 +168,7 @@ async function runDolLcaScraper({ quartersToFetch = null } = {}) {
           employer: rec.employer,
           state: rec.state,
           industry: rec.industry,
+          naicsCode: rec.industry,
           country: "",
           initialApprovals: rec.certified,
           initialDenials: rec.denied,
@@ -152,6 +177,8 @@ async function runDolLcaScraper({ quartersToFetch = null } = {}) {
           rfeIssued: 0,
           rfeDecisionApproved: 0,
           rfeDecisionDenied: 0,
+          wageLevel: rec.wageLevel || "",
+          wageLevelCode: rec.wageLevelCode || "",
           source: "DOL_LCA",
           importedAt: new Date(),
         },

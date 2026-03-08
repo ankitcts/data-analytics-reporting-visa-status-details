@@ -39,7 +39,7 @@ async function runSevisScraper({ quartersToFetch = null } = {}) {
 
   const data = quartersToFetch
     ? SEVIS_ANNUAL_TOTALS.filter((r) => quartersToFetch.includes(r.quarter))
-    : SEVIS_ANNUAL_TOTALS.slice(0, 2);
+    : SEVIS_ANNUAL_TOTALS.slice(0, 3); // default: latest 3 years for weekly sync
 
   const ops = data.map((row) => ({
     updateOne: {
@@ -47,6 +47,7 @@ async function runSevisScraper({ quartersToFetch = null } = {}) {
       update: {
         $set: {
           quarter: row.quarter,
+          year: row.year,
           school: "_national_aggregate_",
           state: "",
           country: "",

@@ -8,12 +8,17 @@ const L1RecordSchema = new mongoose.Schema({
   country: { type: String, default: "" },
   approvals: { type: Number, default: 0 },
   denials: { type: Number, default: 0 },
+  receipts: { type: Number, default: 0 },
+  pending: { type: Number, default: 0 },
   rfeIssued: { type: Number, default: 0 },
-  source: { type: String, default: "USCIS_I129" },
+  source: { type: String, enum: ["USCIS_I129", "DHS_YEARBOOK"], default: "USCIS_I129" },
   importedAt: { type: Date, default: Date.now },
 });
 
-L1RecordSchema.index({ fiscalYear: 1, visaType: 1, country: 1 }, { unique: true });
+// Note: old index { fiscalYear: 1, visaType: 1, country: 1 } must be dropped in Atlas before deploying:
+//   db.l1records.dropIndex("fiscalYear_1_visaType_1_country_1")
+L1RecordSchema.index({ fiscalYear: 1, visaType: 1, employer: 1, country: 1 }, { unique: true });
+L1RecordSchema.index({ employer: 1, fiscalYear: 1 });
 L1RecordSchema.index({ country: 1 });
 
 module.exports = mongoose.model("L1Record", L1RecordSchema);

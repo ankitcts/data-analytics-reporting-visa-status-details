@@ -21,7 +21,7 @@ export default function OptCptTab() {
   return (
     <div className="tab-content">
       <div className="tab-header">
-        <h2 className="tab-title">OPT / CPT Program</h2>
+        <h2 className="tab-title">OPT / F-1 Program</h2>
         <div className="filter-row">
           <select className="year-select" value={year} onChange={(e) => setYear(e.target.value)}>
             <option value="">All Years</option>
@@ -59,6 +59,8 @@ export default function OptCptTab() {
         <strong>OPT</strong> — 12 months post-graduation work authorization for F-1 students. STEM graduates may apply for a <strong>24-month STEM OPT extension</strong> (total 36 months).
         <br />
         <strong>CPT</strong> — Authorized off-campus work as part of a curriculum requirement. Must be integral to the degree program.
+        <br />
+        <strong>Pipeline:</strong> OPT is the primary pathway to H-1B — see the <em>Overview</em> tab for F-1 → OPT → H-1B funnel visualization.
       </div>
 
       {trends && trends.length > 0 && (
